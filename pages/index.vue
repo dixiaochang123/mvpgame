@@ -9,7 +9,7 @@
       <div class="topdiv" style="position: relative">
         <div class="text">
           <p>EMPOWER GAMEFI</p>
-          <p>PROJECTS</p>
+          <!-- <p>PROJECTS</p> -->
           <p>GATHER PLAYERS WITH</p>
           <p>HIGH CONSENSUS</p>
         </div>
@@ -273,7 +273,6 @@
   </div>
 
 </template>
-
 <script>
 import guide from "@/components/guide.vue";
 import { Swiper, SwiperSlide } from "vue-awesome-swiper";
@@ -281,7 +280,17 @@ import { Swiper, SwiperSlide } from "vue-awesome-swiper";
   import {OrbitControls} from '../assets/js/OrbitControls.js';
   import {FBXLoader} from '../assets/js/FBXLoader.js';
   import {Reflector} from '../static/threejs/examples/jsm/objects/Reflector.js';
-    const clock = new THREE.Clock();
+  import Stats from '../static/threejs/examples/jsm/libs/stats.module';
+  const clock = new THREE.Clock();
+  let guiParams = null;
+// 模型参数 
+let modelInfo = {
+  position: {
+    x: 75,
+    y: 90,
+    z: 0
+  }
+}
 export default {
   name: "IndexPage",
   layout: "BaseLayout",
@@ -576,14 +585,24 @@ export default {
       this.hover5 = false;
     },
     init() {
+      if (process.client) {
+        this.dat = require('dat.gui');
+      }
+    //GUI
+        guiParams = new function() {
+          this.rotationSpeed = 0.02;
+          this.positionX = modelInfo.position.x;
+          this.positionY = modelInfo.position.y;
+          this.positionZ = modelInfo.position.z;
+        }
+        // const dat = require('dat.gui');
         const container = document.getElementById('three-container');
         document.addEventListener('mousemove',this.onMouseover)
         this.camera = new THREE.PerspectiveCamera(45, container.innerWidth / container.innerHeight, 0.5, 500);
         this.camera.position.set(0, 150, 300);
         this.scene = new THREE.Scene();
         // this.scene.add(new THREE.AxesHelper(500))
-        this.scene.position.set(80, 85, -10);
-
+        this.scene.position.set(guiParams.positionX, guiParams.positionY, guiParams.positionZ);
         const blueLight = new THREE.PointLight(0x7f7fff, 0.25, 1000);
         blueLight.position.set(0, 50, 550);
         this.scene.add(blueLight);
@@ -596,19 +615,24 @@ export default {
         dirLight.shadow.camera.right = 120;
         this.scene.add(dirLight);
 
+        // 右上角
+        const gui = new this.dat.GUI();
+        gui.add(guiParams, 'positionX', 0, 500);
+        gui.add(guiParams, 'positionY', 0, 500);
+        gui.add(guiParams, 'positionZ', 0, 500);
 
 
-        //创建圆形水平镜面，用于将胶囊体、甜圈圈、多面体小球映射到地面上
-        let geometry = new THREE.CircleGeometry(130, 130);
-        let groundMirror = new Reflector(geometry, {
-          clipBias: 0.003,
-          textureWidth: window.innerWidth * window.devicePixelRatio,
-          textureHeight: window.innerHeight * window.devicePixelRatio,
-          color: 0x777777
-        });
-        groundMirror.position.y = -29;
-        groundMirror.rotateX(-Math.PI / 2);
-        this.scene.add(groundMirror);
+        //创建圆形水平镜面，用于将胶囊体、甜圈圈、多面体小球映射到地面上   底部投影
+        // let geometry = new THREE.CircleGeometry(130, 130);
+        // let groundMirror = new Reflector(geometry, {
+        //   clipBias: 0.003,
+        //   textureWidth: window.innerWidth * window.devicePixelRatio,
+        //   textureHeight: window.innerHeight * window.devicePixelRatio,
+        //   color: 0x777777
+        // });
+        // groundMirror.position.y = -29;
+        // groundMirror.rotateX(-Math.PI / 2);
+        // this.scene.add(groundMirror);
        
         let that = this
         // model
@@ -642,9 +666,9 @@ export default {
 
         window.addEventListener('resize', this.onWindowResize());
 
-        // stats
-        // this.stats = new Stats();
-        // container.appendChild(this.stats.dom);
+        // 左上角 stats
+        this.stats = new Stats();
+        container.appendChild(this.stats.dom);
 
       },
     onWindowResize() {
@@ -654,11 +678,12 @@ export default {
       },
       animate() {
         requestAnimationFrame(this.animate);
-
         const delta = clock.getDelta();
         if (this.mixer) this.mixer.update(delta);
+        this.scene.position.set(guiParams.positionX, guiParams.positionY, guiParams.positionZ);
+
         this.renderer.render(this.scene, this.camera);
-        // this.stats.update();
+        this.stats.update();
       },
       onMouseover(event){
         this.scene.rotation.y = (event.clientX - 600) / 5000;
@@ -667,6 +692,8 @@ export default {
   },
   data() {
     return {
+      dat: null,
+      rotationSpeed: 0,
       topFov: 1200,
       pivot5: null,
       pivot6: null,
@@ -712,8 +739,12 @@ export default {
       scene: null,
       // 渲染器对象
       renderer: null,
+      Stats: null,
       // 材质对象
       mesh: null,
+      positionX: 0,
+      positionY: 0,
+      positionZ: 0,
       controls: null,
       topdiv2: true,
       hover1: false,
@@ -781,7 +812,7 @@ export default {
 				y: 0,
 				z: 0
       },
-      scale: 0.2,
+      scale: 0.25,
       translateY: 1,
     };
   },
@@ -1285,7 +1316,7 @@ export default {
     }
     .text {
       // width: 948px;
-      margin-top: 35vh;
+      margin-top: 20vh;
       // margin-left: 14%;
       flex-shrink: 0;
       width: 1200px;
@@ -1314,12 +1345,12 @@ export default {
       .describeadd {
         margin-right: 10px;
         width: 57px;
-        height: 87px;
+        height: 187px;
         font-size: 62px;
         font-family: "Poppins-Bold";
         font-weight: bold;
         color: #ffffff;
-        line-height: 93px;
+        line-height: 191px;
       }
     }
     .topimg {
@@ -1331,7 +1362,7 @@ export default {
 @media screen and(min-width: 1600px) {
 .index-content .topdiv .text {
       // width: 948px;
-      margin-top: 43vh;
+      margin-top: 38vh;
 } 
 }
 
